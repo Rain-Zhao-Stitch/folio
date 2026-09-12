@@ -1,0 +1,31 @@
+const {chromium}=require('@playwright/test');
+const {PNG}=require('pngjs');
+const assert=require('node:assert/strict');
+function difference(a,b){a=PNG.sync.read(a);b=PNG.sync.read(b);let total=0;for(let i=0;i<a.data.length;i+=4)for(let c=0;c<3;c++)total+=Math.abs(a.data[i+c]-b.data[i+c]);return total/(a.width*a.height*3);}
+(async()=>{const browser=await chromium.launch({channel:'msedge',headless:true});try{
+ const page=await browser.newPage({viewport:{width:1280,height:900}}),errors=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.goto('http://127.0.0.1:4173');await page.locator('#epub-input').setInputFiles('test-results/sample.epub');await page.locator('.book-card').click();await page.waitForFunction(()=>preparedTurn?.gpu&&!busy);
+ const paper=await page.locator('#paper').boundingBox();await page.mouse.move(paper.x+paper.width/2,paper.y+paper.height/2);await page.mouse.wheel(100,0);
+ await page.waitForFunction(()=>document.querySelector('.three-curl-host')?.dataset.mode==='spine');
+ const trackpad=await page.locator('#animation canvas').screenshot({path:'test-results/input-trackpad-spine.png'});
+ assert.deepEqual(await page.evaluate(()=>{const host=document.querySelector('.three-curl-host'),gl=host.querySelector('canvas').getContext('webgl2');return{mode:host.dataset.mode,opaque:host.dataset.opaque,alpha:gl.getContextAttributes().alpha};}),{mode:'spine',opaque:'true',alpha:false});
+ await page.waitForFunction(()=>!busy);await page.waitForFunction(()=>preparedTurn?.gpu);
+ await page.mouse.move(paper.x+paper.width-4,paper.y+paper.height-10);await page.mouse.down();await page.mouse.move(paper.x+paper.width*.6875,paper.y+paper.height*.78,{steps:8});
+ await page.waitForFunction(()=>document.querySelector('.three-curl-host')?.dataset.mode==='corner');
+ const mouse=await page.locator('#animation canvas').screenshot({path:'test-results/input-mouse-corner.png'});
+ assert.deepEqual(await page.evaluate(()=>{const host=document.querySelector('.three-curl-host');return{mode:host.dataset.mode,corner:host.dataset.corner,opaque:host.dataset.opaque};}),{mode:'corner',corner:'bottom',opaque:'true'});
+ assert.ok(difference(trackpad,mouse)>2,'Mouse corner curl must be visibly different from the trackpad spine curl');
+ await page.mouse.up();await page.waitForFunction(()=>!busy);await page.waitForFunction(()=>preparedTurn?.gpu);
+ await page.mouse.move(paper.x+paper.width-4,paper.y+10);await page.mouse.down();await page.mouse.move(paper.x+paper.width*.6875,paper.y+paper.height*.22,{steps:8});
+ await page.waitForFunction(()=>document.querySelector('.three-curl-host')?.dataset.corner==='top');
+ const top=await page.locator('#animation canvas').screenshot({path:'test-results/input-mouse-top-corner.png'});
+ assert.ok(difference(mouse,top)>1,'Top and bottom mouse corners must bend in opposite vertical directions');
+ await page.mouse.up();await page.waitForFunction(()=>!busy);await page.waitForFunction(()=>preparedTurn?.gpu);
+ await page.keyboard.press('ArrowRight');await page.waitForFunction(()=>document.querySelector('.three-curl-host')?.dataset.mode==='spine');await page.waitForFunction(()=>!busy);
+ await page.waitForFunction(()=>preparedOppositeTurn?.gpu||preparedTurn?.direction<0);
+ await page.mouse.move(paper.x+4,paper.y+paper.height-10);await page.mouse.down();await page.mouse.move(paper.x+paper.width*.3125,paper.y+paper.height*.78,{steps:8});
+ await page.waitForFunction(()=>document.querySelector('.three-curl-host')?.dataset.mode==='corner');
+ assert.deepEqual(await page.evaluate(()=>{const host=document.querySelector('.three-curl-host');return{corner:host.dataset.corner,opaque:host.dataset.opaque};}),{corner:'bottom',opaque:'true'});
+ await page.mouse.up();await page.waitForFunction(()=>!busy);
+ assert.deepEqual(errors,[]);console.log('Trackpad/keyboard spine curl, mouse corner curl, and opaque WebGL surface passed');
+}finally{await browser.close();}})().catch(e=>{console.error(e);process.exitCode=1;});

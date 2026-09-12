@@ -1,0 +1,1 @@
+StPageFlip local fix: the bundled Render.start() now keeps its animation frame ID and checks folioStopped. Render.stop() cancels the frame and clears the active animation. app.js calls stop() before destroying each temporary flip view. The upstream destroy() only removes UI elements and leaves its render loop running. Preserve this fix when updating the vendor bundle.
