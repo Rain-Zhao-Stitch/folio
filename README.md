@@ -1,28 +1,136 @@
-# Folio · Three.js 本地阅读器
+Folio · Three.js Local Reader
 
-双击 `启动阅读器.cmd`，或在此目录运行 `node server.cjs`，访问 http://127.0.0.1:4173 。需要已安装 Node.js。关闭运行窗口会停止服务。首次安装已将所有网页依赖放入 dist/vendor，运行时不需要互联网。
+Double-click 启动阅读器.cmd, or run node server.cjs in this directory, then open [http://127.0.0.1:4173](http://127.0.0.1:4173). Node.js must be installed. Closing the command window will stop the server. All web dependencies are stored locally in dist/vendor, so no internet connection is required during use.
 
-导入 EPUB 后点击封面阅读。点击两侧箭头、使用键盘左右键或左右滑动翻页。目录按钮切换章节，Aa 中导入 TTF/OTF/WOFF/WOFF2 字体并调整字号，顶部切换深色模式。桌面自动双页，小屏单页。
+After importing an EPUB, click the book cover to start reading. Use the arrows on both sides, the left and right arrow keys, or horizontal swipe gestures to turn pages. The Table of Contents button lets you switch chapters. The Aa menu allows you to import TTF, OTF, WOFF, or WOFF2 fonts and adjust the font size. The top toolbar includes a dark mode toggle. Desktop devices automatically use a two-page layout, while smaller screens use a single-page layout.
 
-Aa 设置还包含 Comic Sans MS、行距、字母间距、单词间距、页边距和段落间距。间距未调整前沿用书籍默认值，调整后随其他设置保存在本地。Comic Sans MS 调用电脑已安装的字体，中文字符由系统字体补足；未安装此字体的设备需自行安装或导入。阅读工具栏的全屏按钮进入纯阅读全屏，按 Esc 退出。全屏隐藏工具栏、翻页按钮和弹窗，但在底部保留当前页数；书页铺满屏幕并保留字体和间距设置。进入或退出全屏前会记录当前页面第一行的 EPUB CFI，并在新尺寸下重新对齐到该内容，而不是按旧分页序号估算。全屏可使用左右方向键、正文滑动或书页边缘拖动翻页。深色模式使用纯黑背景和白色正文。
+The Aa settings also include Comic Sans MS, line spacing, letter spacing, word spacing, page margins, and paragraph spacing. Before these spacing settings are manually changed, the reader uses the original EPUB styles. Once changed, the settings are saved locally together with other reader preferences. Comic Sans MS uses the version installed on the computer. Chinese characters that are not supported by the font will use the system fallback font. If Comic Sans MS is not installed, it must be installed or imported manually.
 
-书籍原文件、封面、阅读位置、自定义字体和设置保存在当前浏览器的 IndexedDB。使用固定的 http://127.0.0.1:4173 地址以及同一个浏览器；不同端口、localhost、其他浏览器各自拥有独立数据。清除网站数据或使用隐私窗口会导致数据丢失，务必保留原 EPUB 和字体文件。
+The fullscreen button in the reading toolbar enters a clean reading mode. Press Esc to exit fullscreen. Fullscreen mode hides the toolbar, page-turn buttons, and popups, while keeping the current page number visible at the bottom. The book pages expand to fill the screen while keeping the current font and spacing settings.
 
-触控板双指横向滑动的累计距离直接控制卷页程度，左右方向键使用同一套竖直书脊卷页动画。浏览器无法直接获取触控板手指是否离开，使用短暂的无输入间隔判定手势结束：超过 50% 后结束则完成翻页，等于或低于 50% 则回弹；按 Esc 可取消。一次手势最多翻一页，纵向滚动与缩放手势不触发翻页。左右拖动区域为 40–100 px。翻页落定后会优先预热同方向的下一张 GPU 曲面；在离手判定尚未结束时开始的下一划，会通过短暂停顿后的幅度回升被识别并排队。连续滑动会播放完整卷页，不会降级为黑色边缘或淡入跳页。首次或缓存失效时，当前页面保持原亮度直至快照就绪。
+Before entering or leaving fullscreen mode, the reader records the EPUB CFI of the first visible line and realigns the new layout to the same content instead of estimating the position using the old page number. In fullscreen mode, pages can still be turned using the left and right arrow keys, swipe gestures, or dragging from the page edges. Dark mode uses a pure black background with white text.
 
-右上角「翻译设置」可配置快捷键和释义语言。默认双击英文单词后按 Alt + T，在选词下方显示中文词性和释义；也可选择英文释义。语言选项下方可导入 JSON、CSV、TSV 或制表符 TXT 词典，支持 UTF-8、UTF-16 和 Windows 常见的 GB18030 编码；导入内容保存在本机并优先于内置词典。JSON 可使用 `{"word":{"zh":"中文释义","en":"English definition"}}`，表格文本使用 `word / zh / en` 三列。坏文件不会覆盖当前词典，并可随时移除导入词典恢复 ECDICT。快捷键支持 Alt + 逗号等标点组合；鼠标侧键 1 或 2 可以单独绑定查词。开启「双击自动翻译」后，双击选词直接显示释义，无需快捷键。释义框使用半透明背景、背景模糊和高光边缘。全屏仍可使用查词快捷键。内置词典使用本地 ECDICT，共 768,739 词条，文件位于 dist/dictionary，按词分片加载，无需联网，也不发送选中的文字。数据源 https://github.com/skywind3000/ECDICT ，MIT 许可证及源文件 SHA-256 随词库保存。查词未命中会明确提示，不生成或猜测释义。
+Original EPUB files, book covers, reading positions, imported fonts, and settings are stored in the browser's IndexedDB. Always use the fixed address [http://127.0.0.1:4173](http://127.0.0.1:4173) and the same browser. Different ports, localhost, and different browsers use separate storage. Clearing browser site data or using private or incognito mode may cause stored data to be lost. Always keep copies of the original EPUB and font files.
 
-翻页已重写为 Three.js / WebGL2：方向键、按钮和触控板共用从书脊平行卷起的 GPU 曲面；鼠标在页边任何位置抓取时，都以实际抓取点为纸张锚点，折痕取锚点与当前指针的垂直平分线，因此始终垂直于拉扯方向。GPU 动画结束后与已完成排版的 EPUB 正文短暂交叉淡化，避免纹理文字和静态 DOM 在合成边界闪烁。纸面强制不透明并写入深度缓冲，前后纹理来自 EPUB.js 实际排版，不再使用 DOM 切片或 StPageFlip。只保留一个 WebGL 上下文，前后页预上传纹理，进度不变时停止绘制，缓存失效时释放纹理和网格。阅读静止时仍使用原始可选择文本。此实现近似 iBooks 的卷页，不是 Apple 的原始动画。减少动态效果或 WebGL 不可用时保留普通翻页。翻译窗口已打开时，再按绑定的键盘快捷键或鼠标侧键可关闭窗口。
+Two-finger horizontal trackpad gestures directly control page-curl progress based on the total swipe distance. The left and right arrow keys use the same vertical-spine page-curl animation.
 
-JoyXoff 的系统鼠标映射由 JoyXoff 控制，网页不能解除其全屏自动停用规则。需要在 JoyXoff 的对应浏览器配置中设置“全屏时不禁用”。网页直接接收的方向键/肩键翻页不等同于系统光标已恢复，A 键不会额外触发网页翻页，以免与映射的鼠标点击冲突。
+Because browsers cannot directly detect when fingers leave the trackpad, the reader uses a short period without input to determine when the gesture has ended. If the page curl passes 50 percent before the gesture ends, the page turn completes. If it is at or below 50 percent, the page returns to its original position. Press Esc to cancel the gesture.
 
-兼容范围：基于 EPUB.js 的 EPUB 2/3，保留书内 HTML/CSS、图片和目录。不能承诺所有 EPUB 完美呈现；DRM 加密、畸形文件、脚本交互、音视频同步和复杂固定版式可能不支持或与原阅读器不同。书内脚本禁用。特殊书籍需要实书验证。
+Each gesture can turn at most one page. Vertical scrolling and zoom gestures do not trigger page turns. The draggable page-edge area is between 40 and 100 pixels wide.
 
-阅读代码位于 dist/app.js，Three.js 渲染源码为 src/curl.js，查词代码为 dist/translation.js，样式为 dist/style.css。执行 npm run build 生成离线 bundle dist/curl.js；npm test 检查入口脚本语法。选择网页而非 Electron 封装，是为了复用现有 EPUB DOM 排版和浏览器 GPU，避免额外宿主；这并不代表浏览器在所有设备上必然更快。未来可将 dist 部署到静态托管服务；届时本地书库不会自动迁移到新网址。
+After a page turn finishes, the next GPU page surface in the same direction is preloaded whenever possible. If another swipe begins before the previous gesture has fully ended, a short pause followed by renewed movement is detected and queued as the next page turn.
 
-依赖：EPUB.js（BSD-2-Clause）、JSZip（MIT/GPL-3.0 双许可，采用 MIT）、Three.js（MIT）；打包使用 esbuild。旧 StPageFlip 文件保留在 vendor 中供历史代码参考，新版不再加载或依赖它。
+Continuous swiping still plays the full page-curl animation and does not fall back to a black edge or fade transition. When a page is loaded for the first time or the cache has been invalidated, the current page remains at normal brightness until the required snapshot is ready.
 
-验证：执行 `npm run build`、`npm test`、`npm run verify`。最后一个命令自动复用或启动本地服务，并依次运行全部 verify*.cjs；测试使用 Edge 无头浏览器和自制 EPUB，覆盖导入、前后翻页、拖动完成及取消、目录跳转、字体导入、深色模式、刷新恢复、手机布局、Three.js 纹理像素对比、GPU 资源释放、显卡上下文丢失与恢复，以及无 WebGL 时继续阅读。截图保存在 test-results。这不代表所有真实 EPUB 和实体触控板/手柄均已验证。
+The Translation Settings button in the upper-right corner allows you to configure translation shortcuts and definition language. By default, double-click an English word and press Alt + T to display its Chinese part of speech and definition below the selected word. English definitions can also be selected.
 
+The language settings also allow you to import dictionaries in JSON, CSV, TSV, or tab-separated TXT format. UTF-8, UTF-16, and common Windows GB18030 encodings are supported. Imported dictionaries are stored locally and take priority over the built-in dictionary.
 
+JSON dictionaries may use this structure:
 
+{"word":{"zh":"Chinese definition","en":"English definition"}}
+
+Tabular dictionary files should use three columns:
+
+word / zh / en
+
+Invalid dictionary files will not overwrite the currently loaded dictionary. Imported dictionaries can be removed at any time to return to the built-in ECDICT dictionary.
+
+Keyboard shortcuts may include punctuation combinations such as Alt + comma. Mouse side button 1 or 2 can also be assigned directly to dictionary lookup. When Double-click to Translate is enabled, double-clicking a word immediately shows its definition without requiring a shortcut.
+
+The definition popup uses a semi-transparent background, background blur, and highlighted borders. Translation shortcuts continue to work in fullscreen mode.
+
+The built-in dictionary uses a local copy of ECDICT containing 768,739 entries. Dictionary files are stored in dist/dictionary and are loaded in word-based chunks. No internet connection is required, and selected text is never sent anywhere.
+
+The dictionary data comes from:
+[https://github.com/skywind3000/ECDICT](https://github.com/skywind3000/ECDICT)
+
+The MIT license and the SHA-256 hash of the original source files are stored together with the dictionary. If a word is not found, the reader clearly reports that no definition was found instead of generating or guessing one.
+
+Page turning has been rewritten using Three.js and WebGL2. Arrow keys, page buttons, and trackpad gestures all use the same GPU-rendered page surface that curls parallel to the book spine.
+
+When the mouse grabs any point along the page edge, that exact point becomes the paper anchor. The fold line is calculated as the perpendicular bisector between the anchor point and the current pointer position, so the fold always remains perpendicular to the dragging direction.
+
+After the GPU animation finishes, the rendered page briefly crossfades into the fully laid-out EPUB content to prevent visual flickering between the texture and the static DOM.
+
+The paper surface is always opaque and writes to the depth buffer. Front and back page textures are generated from the actual EPUB.js layout instead of DOM slicing or StPageFlip.
+
+Only one WebGL context is used. Front and back page textures are pre-uploaded. Rendering stops when animation progress does not change. Textures and meshes are released when the cache becomes invalid. When the reader is idle, the original selectable DOM text remains active.
+
+This implementation is designed to approximate the page-curl behavior of iBooks. It does not reproduce Apple's original animation.
+
+If Reduce Motion is enabled or WebGL is unavailable, the reader falls back to a standard page transition.
+
+If the translation popup is already open, pressing the assigned keyboard shortcut or mouse side button again closes it.
+
+JoyXoff system-level mouse mapping is controlled entirely by JoyXoff. The web application cannot override JoyXoff's rule that automatically disables mappings in fullscreen mode. To prevent this, configure the corresponding browser profile in JoyXoff so that it remains enabled during fullscreen mode.
+
+Direction keys or shoulder buttons received directly by the web page can still turn pages. This does not mean the system mouse cursor mapping has been restored.
+
+The A button does not trigger an additional page turn in the browser to avoid conflicts when it is mapped to a mouse click.
+
+Compatibility includes EPUB 2 and EPUB 3 through EPUB.js. The reader preserves the book's HTML, CSS, images, and Table of Contents.
+
+Perfect rendering of every EPUB cannot be guaranteed. DRM-protected EPUB files, malformed files, interactive scripts, synchronized audio or video, and complex fixed-layout publications may not be supported or may behave differently from other readers.
+
+Scripts inside EPUB files are disabled. Unusual EPUB files should be tested individually.
+
+Reader application code:
+dist/app.js
+
+Three.js rendering source:
+src/curl.js
+
+Translation code:
+dist/translation.js
+
+Styles:
+dist/style.css
+
+Run the following command to generate the offline bundle:
+
+npm run build
+
+The generated file is:
+
+dist/curl.js
+
+Run the following command to check the syntax of the entry scripts:
+
+npm test
+
+A web application was chosen instead of an Electron wrapper so the project can reuse the existing EPUB DOM layout and the browser's GPU rendering pipeline without adding another application layer.
+
+This does not mean browser-based rendering will always be faster on every device.
+
+In the future, the dist folder can be deployed to a static hosting service. However, books and settings stored locally will not automatically transfer to a different website address.
+
+Dependencies:
+
+EPUB.js - BSD-2-Clause
+
+JSZip - MIT/GPL-3.0 dual license, using the MIT license
+
+Three.js - MIT
+
+esbuild - used for bundling
+
+Old StPageFlip files remain in vendor for reference to previous implementations, but the current version no longer loads or depends on StPageFlip.
+
+To verify the project, run:
+
+npm run build
+npm test
+npm run verify
+
+The final command automatically reuses an existing local server or starts one if necessary, then runs all verify*.cjs tests in sequence.
+
+Testing uses headless Microsoft Edge and custom EPUB test files.
+
+The tests cover EPUB importing, forward and backward page turns, completed and cancelled drag gestures, Table of Contents navigation, font importing, dark mode, restoring the reading position after refresh, mobile layouts, Three.js texture pixel comparison, GPU resource cleanup, graphics-context loss and recovery, and continued reading when WebGL is unavailable.
+
+Test screenshots are saved in:
+
+test-results
+
+These automated tests do not guarantee compatibility with every real EPUB file, physical trackpad, or game controller.
